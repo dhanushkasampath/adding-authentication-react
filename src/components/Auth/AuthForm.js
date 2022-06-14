@@ -1,10 +1,14 @@
-import {useRef, useState} from 'react';
+import {useRef, useState, useContext} from 'react';
 
 import classes from './AuthForm.module.css';
+import AuthContext from "../../store/auth-context";
 
 const AuthForm = () => {
     const emailInputRef = useRef();
     const passwordInputRef = useRef();
+
+    const authCtx = useContext(AuthContext);//now we can access the global states
+
     const [isLogin, setIsLogin] = useState(true);
     const [isLoading, setIsLoading] = useState(false);
 
@@ -21,37 +25,45 @@ const AuthForm = () => {
         //you can add validation
 
         setIsLoading(true);//set to true when we start to send the request
+        let url;
         if (isLogin) {
-
+            url = 'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=AIzaSyAJJS6NoP5zR1TFmJoS4IPz589ObIybWBo';
         } else {
-            fetch('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyAJJS6NoP5zR1TFmJoS4IPz589ObIybWBo',
-                {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        email: enteredEmail,
-                        password: enteredPassword,
-                        returnSecureToken: true
-                    }),
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                }
-            ).then(res => {
-                setIsLoading(false);//once we get a response set it to false. no matter it is success or failed
-                if (res.ok) {
-                    console.log(res);
-                } else {
-                    res.json().then(data => {
-                        let errorMessage = 'Authentication Failed!';
-                        if (data && data.error && data.error.message) {
-                            errorMessage = data.error.message;// this error comes from firebase
-                        }
-                        //show an error modal
-                        alert(errorMessage);
-                    });
-                }
-            });
+            url = 'https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyAJJS6NoP5zR1TFmJoS4IPz589ObIybWBo';
         }
+        fetch(
+            url,
+            {
+                method: 'POST',
+                body: JSON.stringify({
+                    email: enteredEmail,
+                    password: enteredPassword,
+                    returnSecureToken: true
+                }),
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            }
+        ).then(res => {
+            setIsLoading(false);//once we get a response set it to false. no matter it is success or failed
+            if (res.ok) {
+                return res.json();
+            } else {
+                res.json().then(data => {
+                    let errorMessage = 'Authentication Failed!';
+                    // if (data && data.error && data.error.message) {
+                    //     errorMessage = data.error.message;// this error comes from firebase
+                    // }
+                    //show an error modal
+                    throw new Error(errorMessage);
+                });
+            }
+        }).then((data) => {
+            authCtx.login(data.idToken);//set the token as app wise state.
+            console.log(data);
+        }).catch((err) => {
+            alert(err.message);
+        });
 
     }
 
