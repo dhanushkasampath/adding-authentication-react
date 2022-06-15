@@ -61,7 +61,9 @@ const AuthForm = () => {
                 });
             }
         }).then((data) => {
-            authCtx.login(data.idToken);//set the token as app wise state.
+            const expirationTime = new Date(new Date().getTime() + (+data.expiresIn * 1000));//here we get the
+            // expiration time in milliseconds
+            authCtx.login(data.idToken, expirationTime.toISOString());//set the token as app wise state.
             console.log(data);
             history.replace('/');//when login success redirect to home page
         }).catch((err) => {
